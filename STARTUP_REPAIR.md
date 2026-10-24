@@ -1,0 +1,1 @@
+Fixes corruption of the Construction Documents Print/PDF handler, which had swallowed the Solid Lab code into an unterminated JavaScript string. Restored manager script, separated Solid Lab script, verified inline scripts and embedded base64 engine via Node syntax checks. OpenCascade WASM remains build-time dependency; kernel runtime not verified.
