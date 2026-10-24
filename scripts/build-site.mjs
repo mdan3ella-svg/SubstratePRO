@@ -10,7 +10,7 @@ for(const file of ['opencascade.js','opencascade.wasm','manifest.json']){
 if(fs.statSync(path.join(vendor,'opencascade.wasm')).size<10_000_000)throw Error('OCCT WASM appears truncated');
 fs.rmSync(target,{recursive:true,force:true});fs.mkdirSync(target,{recursive:true});
 const pages=['index.html','cad-workspace.html','occt-test.html'];
-const modules=['occt-adapter.mjs','occt-adapter-v459.mjs','occt-ui.mjs','cad-workspace.mjs','cad-workspace-ui.mjs','bim-occt-bridge.mjs','bim-occt-main.mjs'];
+const modules=['occt-adapter.mjs','occt-adapter-v459.mjs','occt-ui.mjs','cad-workspace.mjs','cad-workspace-ui.mjs','bim-occt-bridge.mjs','bim-occt-main.mjs','bim-workflow-restore.mjs'];
 for(const f of [...pages,...modules]){if(!fs.existsSync(path.join(root,f)))throw Error('Missing site file: '+f);fs.copyFileSync(path.join(root,f),path.join(target,f));}
 // Generate this marker in the published output: GitHub's web uploader often omits empty dotfiles.
 // Deployment guard: never publish an old adapter with the pinned ES-module kernel.
@@ -36,3 +36,9 @@ for(const rel of ['index.html','occt-ui.mjs','occt-test.html','cad-workspace.htm
 }
 const newTest=fs.readFileSync(path.join(target,'occt-test.html'),'utf8');
 if(!newTest.includes('occt-adapter-v459.mjs'))throw Error('OCCT acceptance test does not use v459 adapter');
+
+// Validate launch and BIM workflow files are published and no print-template injection survives.
+const home=fs.readFileSync(path.join(target,'index.html'),'utf8');
+if(!home.includes('bim-workflow-restore.mjs?v=4.6.2'))throw Error('BIM wall drafting workflow reference missing');
+if(!fs.existsSync(path.join(target,'bim-workflow-restore.mjs')))throw Error('BIM workflow module missing from deployed site');
+if(home.includes('occt-ui.mjs?v=4.5.9</script>'))throw Error('Invalid OCCT UI script markup');
