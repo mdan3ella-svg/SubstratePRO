@@ -1,36 +1,39 @@
-# SUBSTRATE PRO — GitHub Pages HTML + OpenCascade.js build
+# SUBSTRATE PRO v4.5.2 — GitHub Pages OCCT asset deployment repair
 
-This project contains **two HTML entrypoints**:
+Your screenshot shows **OCCT assets missing**. This is a deployment problem, not a geometry operation. The browser expects three files at `vendor/opencascade/` relative to the hosted repository's URL:
 
-- `index.html` — existing SUBSTRATE PRO BIM/drafting application.
-- `cad-workspace.html` — separate experimental OCCT parametric CAD workspace (feature records, B-rep assembly, Boolean attempts, WebGL tessellation, section preview).
-- `occt-test.html` — kernel verification page.
+- `opencascade.js`
+- `opencascade.wasm` (a large ~66 MB WASM file)
+- `manifest.json`
 
-The HTML and application code are included in this ZIP, but **the OpenCascade.js WASM runtime is not included**. GitHub Actions runs `npm install --no-audit --no-fund && npm run build && npm test`, then publishes the resulting JavaScript/WASM to GitHub Pages. Do not upload the ZIP as if it were a fully operational offline OCCT application. A local filesystem `file://` URL is not a suitable way to load WASM; use a local HTTP server or GitHub Pages.
+The previous source ZIP does **not** contain these assets. Uploading files to a branch and choosing **Deploy from a branch** does not execute npm install/build. This package adds a mandatory Actions build that creates the final site in `site/` and refuses to publish if the WASM file is absent or truncated.
 
-## Deploy with GitHub Actions
+## GitHub installation
 
-1. Create a GitHub repository and upload **all files including the hidden `.github/workflows/deploy.yml` and `.nojekyll`** to the root of the `main` branch.
-2. Go to **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. Push a commit to `main` (or run **Actions → Build and deploy SUBSTRATE PRO with pinned OCCT → Run workflow**).
-4. The workflow installs the pinned `opencascade.js@1.1.1`, bundles its distribution in `vendor/opencascade/`, checks source tests and deploys.
-5. Open `https://USERNAME.github.io/REPOSITORY/occt-test.html` and **test actual runtime operations**. Then open `.../cad-workspace.html`. The main drafting UI remains at the site root.
+1. Unzip this package **and upload all files/folders in its root** to your repository's `main` branch. Ensure `.github/workflows/deploy.yml` is included; GitHub's web upload can omit hidden folders if you don't upload the directory contents correctly.
+2. Repository **Settings → Pages → Build and deployment → Source → GitHub Actions** (not **Deploy from a branch**).
+3. Repository **Actions → SUBSTRATE PRO — Build and deploy pinned OCCT WASM → Run workflow** (or commit to `main`).
+4. Confirm that the workflow passes **Create GitHub Pages artifact with OCCT WASM**, **Verify deployment assets**, and **deploy-pages**. Any red step means the site was not successfully built.
+5. Visit `https://USERNAME.github.io/REPOSITORY/deployment-status.json` and verify `ready:true` and a positive `wasmBytes` value.
+6. Open `.../occt-test.html`, click **Initialize OCCT and test solid Boolean**, then test `.../cad-workspace.html` and the main app.
 
-A green GitHub Actions workflow means build and source tests succeeded; **it does not prove the OCCT JavaScript API bindings work in your browser**, nor does it certify tessellation or editing. The OCCT test page is the next required check. If it fails, the API adapter must be corrected to match that installed distribution before the engine is usable.
+The upstream `opencascade.js@1.1.1` distribution supplies `dist/opencascade.wasm.js` and `dist/opencascade.wasm.wasm`. The build copies them to the filenames expected by the browser loader. The WASM binary is **not included in this ZIP**: GitHub Actions must download it from npm during build.
 
-## Run locally
+## Local build
 
 ```bash
-npm install
-npm run build
+npm install --no-audit --no-fund
+npm run build:site
 npm test
-npm run serve
 ```
 
-Then navigate to `http://localhost:4173/occt-test.html` and `http://localhost:4173/cad-workspace.html`.
+The deployable `site/` folder is then produced. Do not upload the **unbuilt source** as the production website. If your organization prohibits Github Actions/package installation, build locally first, and publish the *contents* of the `site/` folder instead.
 
-## Current scope
+## Distinguish these failures
 
-This package is a **GitHub-Pages-ready build project**, not a completed manufacturing-grade CAD/BIM system. OCCT live execution and face tessellation have not been independently verified in this environment. Persisted topology is a feature/Boolean dependency graph; exact stable face-name tracking is absent. Generated section preview currently uses feature envelopes rather than exact OCCT section topology, and the CAD workspace is not automatically synchronized with the legacy BIM document.
+- `OCCT assets missing`: deployment source or workflow did not publish the `vendor/` folder.
+- `Emscripten JavaScript failed to load`: JS URL/asset missing or blocked.
+- `WebAssembly` errors: incomplete file, MIME/network issue, or binary/runtime compatibility.
+- `OCCT constructor ... overload not resolved`: API adapter mismatch; fix against actual runtime before claiming valid Boolean CAD modeling.
 
-GitHub Pages has a file size limit; inspect the final WASM and deployment artifact limits, and if necessary host the WASM at an allowed location using a matching loader.
+This package fixes the **deployment flow**, not the still-unverified OCCT runtime APIs, tessellation, or BIM synchronization. A successful artifact build verifies that the files are included; you must still run the actual browser kernel test.
