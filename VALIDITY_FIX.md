@@ -1,0 +1,1 @@
+SUBSTRATE PRO v4.5.8: BRepCheck_Analyzer bindings expose IsValid_2() (no arguments) and IsValid_1(shape). The previous .IsValid() call threw TypeError. Updated occt-adapter-v458.mjs is imported by the test page and OCCT UI. Copy all files / commit main, then check deployment-status.json adapterVersion. Live WASM Boolean behavior requires hosted acceptance test.

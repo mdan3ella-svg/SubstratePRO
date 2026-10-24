@@ -1,4 +1,4 @@
-import {initializeKernel,makeBox,booleanShape,validateShape,volumeMm3} from './occt-adapter-v457.mjs';
+import {initializeKernel,makeBox,booleanShape,validateShape,volumeMm3} from './occt-adapter-v458.mjs';
 const $=id=>document.getElementById(id);
 const top=document.querySelector('.mainactions')||document.querySelector('header');
 const button=document.createElement('button');button.id='openOCCT';button.textContent='OCCT · B-rep';button.title='OpenCascade.js kernel tools (requires locally deployed WASM)';top?.append(button);
