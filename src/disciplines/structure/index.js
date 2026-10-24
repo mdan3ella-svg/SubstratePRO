@@ -1,2 +1,2 @@
 export const discipline="structure";
-export const tools=["beam", "column"];
+export const tools=["beam", "column", "mullion"];

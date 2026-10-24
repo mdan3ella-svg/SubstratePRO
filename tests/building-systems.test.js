@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {blank} from '../src/core/document-model/index.js';
+import {addLevel,gridArray,makeRoof,makeRoom,makeFacade,makeFraming,schedules,layerVisible,layerLocked} from '../src/detailcore/building-systems/index.js';
+test('levels sorted and duplicate elevations disallowed',()=>{const d=blank();const l=addLevel(d,{name:'Level 2',elevation:3600});assert.equal(l.id,'L2');assert.throws(()=>addLevel(d,{name:'Duplicate',elevation:3600}));assert.equal(d.levels.length,2)});
+test('orthogonal labeled grids',()=>{const d=blank();const a=gridArray(d,{spacingX:3600,spacingY:4000,baysX:2,baysY:3});assert.equal(a.length,7);assert.equal(a[1].coordinate,3600);assert.equal(a[3].label,'A')});
+test('roof family retains elevation and form choice',()=>{const d=blank();const l=addLevel(d,{name:'Roof',elevation:7200});const r=makeRoof(d,{level:l.id,kind:'mono'});assert.equal(r.z,7200);assert.equal(r.roofType,'mono');assert.equal(r.layer,'A-ROOF')});
+test('room area and schedules derive from boundaries',()=>{const d=blank();const room=makeRoom(d,{x:0,y:0,x2:4000,y2:5000,name:'Studio'});d.objects.push(room);assert.equal(schedules(d).rooms[0].areaM2,20)});
+test('facade infill and mullions share group IDs',()=>{const d=blank();const a=makeFacade(d,{x:0,y:0,x2:6000,y2:0,bays:3});assert.equal(a.filter(x=>x.type==='panel').length,3);assert.equal(a.filter(x=>x.type==='mullion').length,4);assert.equal(new Set(a.map(x=>x.groupId)).size,1)});
+test('structural framing includes columns and both directions of beams',()=>{const d=blank();const a=makeFraming(d,{x:0,y:0,x2:7200,y2:7200,baysX:2,baysY:2});assert.equal(a.filter(x=>x.type==='column').length,9);assert.equal(a.filter(x=>x.type==='beam').length,12)});
+test('layer visibility and locks are respected',()=>{const d=blank();const o=makeRoof(d);d.layers.find(x=>x.id==='A-ROOF').visible=false;assert.equal(layerVisible(d,o),false);d.layers.find(x=>x.id==='A-ROOF').locked=true;assert.equal(layerLocked(d,o),true)});

@@ -2,7 +2,7 @@ import {length} from '../../core/geometry/index.js';
 import {symbolLabelPoint} from '../symbol-registry/index.js';
 export const dimensionText=o=>`${Math.round(o.measuredMM ?? length(o))} mm`;
 export const layerFor=o=>({architecture:'A',structure:'S',mechanical:'M',plumbing:'P',electrical:'E',civil:'C',documentation:'G'})[o.discipline]||'G';
-export const tagFor=o=>`${layerFor(o)}-${({wall:'W',slab:'SL',door:'D',window:'WIN',beam:'B',column:'C',duct:'DU',equipment:'EQ',pipe:'P',fixture:'F',conduit:'EC',road:'RD',dimension:'DIM',furniture:'FUR'})[o.type]||o.type.toUpperCase().slice(0,3)} · ${String(o.id||'').slice(-4).toUpperCase()}`;
+export const tagFor=o=>`${layerFor(o)}-${({wall:'W',slab:'SL',door:'D',window:'WIN',beam:'B',column:'C',duct:'DU',equipment:'EQ',pipe:'P',fixture:'F',conduit:'EC',road:'RD',dimension:'DIM',furniture:'FUR',roof:'RF',room:'RM',panel:'PN',mullion:'MU'})[o.type]||o.type.toUpperCase().slice(0,3)} · ${String(o.id||'').slice(-4).toUpperCase()}`;
 export const descriptorFor=o=>{
   if(o.type==='door') return `${Math.round(o.width||length(o))} × ${Math.round(Number(o.height)||2100)} mm · ${o.hand||'LH'} / ${o.swingSide||'in'}`;
   if(o.type==='window') return `${Math.round(o.width||length(o))} × ${Math.round(Number(o.height)||1200)} mm · ${o.windowType||'fixed'} · sill ${Math.round(Number(o.z)||0)} mm`;
