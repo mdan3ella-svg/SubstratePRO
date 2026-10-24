@@ -1,51 +1,54 @@
-name: SUBSTRATE PRO — BIM Deployment
-
+name: SUBSTRATE PRO — Original BIM Vite Pages
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: Checkout original BIM source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Run BIM tests
+          cache-dependency-path: package-lock.json
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify original BIM source
+        run: |
+          test -s index.html
+          test -s src/app/main.js
+          test -s src/interface/style.css
+          grep -q 'src/app/main.js' index.html
+      - name: Run source tests
         run: npm test
-
-      - name: Build original BIM workspace
+      - name: Build original BIM app with Vite
         run: npm run build
-
-      - name: Verify build
-        run: test -s dist/index.html
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
+      - name: Validate deployment output
+        run: |
+          test -s dist/index.html
+          test -d dist/assets
+          echo 'original-modular-bim' > dist/build-identity.txt
+          test -s dist/build-identity.txt
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Vite output
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
