@@ -37,3 +37,13 @@ The deployable `site/` folder is then produced. Do not upload the **unbuilt sour
 - `OCCT constructor ... overload not resolved`: API adapter mismatch; fix against actual runtime before claiming valid Boolean CAD modeling.
 
 This package fixes the **deployment flow**, not the still-unverified OCCT runtime APIs, tessellation, or BIM synchronization. A successful artifact build verifies that the files are included; you must still run the actual browser kernel test.
+
+## v4.5.3 fix
+The build now creates site/.nojekyll automatically. GitHub web uploads may omit empty dotfiles, so .nojekyll is no longer a required repository input. OCCT WASM asset checks remain unchanged.
+
+
+## v4.5.4 fix: Unexpected token `export` / factory not found
+
+The installed `opencascade.wasm.js` is an ES module. The previous adapter injected the file as a *classic script*, causing a browser SyntaxError and no global factory. `occt-adapter.mjs` now imports it using `await import(js.href)` and calls the exported factory with the locally deployed WASM URL. Redeploy the updated module (the GitHub Actions build will copy it into `site/`).
+
+Do not use the old classic-script global `window.opencascade` loader. After successful deployment, visit `occt-test.html` and explicitly run the real box/Boolean checks. This patch has been syntax tested, but runtime WASM initialization cannot be proven here without an installed distribution.

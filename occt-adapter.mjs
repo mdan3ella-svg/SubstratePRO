@@ -10,13 +10,11 @@ export async function initializeKernel(){
   const r=await fetch(new URL('./vendor/opencascade/manifest.json',import.meta.url));
   if(!r.ok)throw Error('OCCT assets missing. Run npm install && npm run build; upload vendor/opencascade/ with index.html.');
   const manifest=await r.json();if(manifest.version!=='1.1.1')throw Error('OCCT version mismatch');
-  // Official 1.1.1 release uses a classic Emscripten script that defines `opencascade`.
-  // Dynamically injecting it as a classic script preserves that global factory.
-  if(typeof globalThis.opencascade!=='function'){
-   await new Promise((resolve,reject)=>{const tag=document.createElement('script');tag.src=js.href;tag.onload=resolve;tag.onerror=()=>reject(Error('OCCT Emscripten JavaScript failed to load'));document.head.append(tag)});
-  }
-  const factory=globalThis.opencascade;
-  if(typeof factory!=='function')throw Error('OCCT factory not found after loading the pinned JavaScript bundle');
+  // opencascade.wasm.js in the pinned 1.1.1 package uses ES module exports.
+  // Loading it as a classic <script> triggers "Unexpected token 'export'".
+  const module=await import(js.href);
+  const factory=module.default || module.opencascade || module.initOpenCascade;
+  if(typeof factory!=='function')throw Error('OCCT ES module did not export a callable factory; exports: '+Object.keys(module).join(', '));
   const oc=await factory({locateFile:(file)=>file.endsWith('.wasm')?wasm.href:new URL(file,js).href});
   if(!oc||!Object.keys(oc).some(k=>k.startsWith('BRepPrimAPI_MakeBox')))throw Error('OCCT initialized without BRepPrimAPI');
   return oc;
