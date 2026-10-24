@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..');
+const source=path.join(root,'node_modules/opencascade.js/dist');
+const target=path.join(root,'vendor/opencascade');
+if(!fs.existsSync(source))throw Error('Missing opencascade.js@1.1.1. Run npm ci or npm install in a network-connected environment.');
+const all=fs.readdirSync(source);
+const pairs=[['opencascade.wasm.js','opencascade.wasm.wasm'],['opencascade.full.js','opencascade.full.wasm']];
+const match=pairs.find(([j,w])=>all.includes(j)&&all.includes(w));
+if(!match)throw Error('Unsupported package distribution. Found: '+all.join(', '));
+fs.mkdirSync(target,{recursive:true});
+fs.copyFileSync(path.join(source,match[0]),path.join(target,'opencascade.js'));
+fs.copyFileSync(path.join(source,match[1]),path.join(target,'opencascade.wasm'));
+const manifest={package:'opencascade.js',version:'1.1.1',originalJS:match[0],originalWASM:match[1],wasmBytes:fs.statSync(path.join(target,'opencascade.wasm')).size};
+fs.writeFileSync(path.join(target,'manifest.json'),JSON.stringify(manifest,null,2));
+if(manifest.wasmBytes<1000000)throw Error('Unexpectedly small OCCT WASM file.');
+console.log('OCCT artifacts copied:',manifest);
