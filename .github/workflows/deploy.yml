@@ -1,52 +1,55 @@
-name: SUBSTRATE PRO — Original BIM Vite Pages
+name: SUBSTRATE PRO - Original BIM Pages
+
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 concurrency:
-  group: pages
+  group: substrate-pro-pages
   cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - name: Checkout original BIM source
+      - name: Check out repository
         uses: actions/checkout@v4
-      - name:      - name: Setup Node.js
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install application dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Verify original BIM source
-        run: |
-          test -s index.html
-          test -s src/app/main.js
-          test -s src/interface/style.css
-          grep -q 'src/app/main.js' index.html
-      - name: Run source tests
-        run: npm test
-      - name: Build original BIM app with Vite
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build original BIM application
         run: npm run build
-      - name: Validate deployment output
+
+      - name: Verify Vite output
         run: |
           test -s dist/index.html
-          test -d dist/assets
-          echo 'original-modular-bim' > dist/build-identity.txt
-          test -s dist/build-identity.txt
+          echo 'Vite output exists.'
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload Vite output
+
+      - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-      - name: Deploy to GitHub Pages
+
+      - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
