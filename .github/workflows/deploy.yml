@@ -19,10 +19,10 @@ jobs:
     steps:
       - name: Checkout original BIM source
         uses: actions/checkout@v4
-      - name: - name: Setup Node.js
-  uses: actions/setup-node@v4
-  with:
-    node-version: '22'
+      - name:      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Install application dependencies
