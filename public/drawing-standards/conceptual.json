@@ -1,0 +1,10 @@
+{
+  "units": "mm",
+  "grid": 250,
+  "lineWeightsMM": {
+    "thin": 0.18,
+    "medium": 0.35,
+    "heavy": 0.7
+  },
+  "note": "Reference presets only; not a jurisdiction-certified construction standard."
+}

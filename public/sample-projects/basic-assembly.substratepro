@@ -1,0 +1,53 @@
+{
+  "schema": "substrate-pro/0.5",
+  "name": "Sample \u2014 Wall and Slab",
+  "units": "mm",
+  "levels": [
+    {
+      "id": "L1",
+      "name": "Level 1",
+      "elevation": 0
+    }
+  ],
+  "settings": {
+    "grid": 250,
+    "snap": true,
+    "gridVisible": true
+  },
+  "objects": [
+    {
+      "id": "S001",
+      "type": "wall",
+      "name": "External Wall",
+      "discipline": "architecture",
+      "level": "L1",
+      "material": "Concrete",
+      "classification": "",
+      "x": 0,
+      "y": 0,
+      "x2": 6000,
+      "y2": 0,
+      "z": 0,
+      "height": 3000,
+      "thickness": 200,
+      "visible": true
+    },
+    {
+      "id": "S002",
+      "type": "slab",
+      "name": "Ground Slab",
+      "discipline": "architecture",
+      "level": "L1",
+      "material": "Concrete",
+      "classification": "",
+      "x": -300,
+      "y": -300,
+      "x2": 6300,
+      "y2": 4000,
+      "z": -200,
+      "height": 200,
+      "thickness": 200,
+      "visible": true
+    }
+  ]
+}

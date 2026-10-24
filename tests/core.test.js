@@ -1,0 +1,15 @@
+import test from'node:test';import assert from'node:assert/strict';
+import{element,blank,parseDocument}from'../src/core/document-model/index.js';
+import{Store}from'../src/core/transactions/index.js';
+import{footprint,prism,project,hit}from'../src/core/geometry/index.js';
+import{validateDocument}from'../src/core/validation/index.js';
+import{sectionAt}from'../src/detailcore/section-engine/index.js';
+import{quantities}from'../src/detailcore/assembly-solver/index.js';
+import{removeWithDependents}from'../src/core/dependencies/index.js';
+import{planSVG}from'../src/plot/index.js';
+test('element geometry and prism are finite',()=>{const o=element('wall',{x:0,y:0,x2:4000,y2:0});assert.equal(footprint(o).length,4);assert.equal(prism(o).top[0].z,3000);assert.equal(hit(o,2000,0),true)});
+test('transaction history and redo',()=>{const s=new Store();s.commit(d=>d.objects.push(element('wall')));assert.equal(s.doc.objects.length,1);s.undo();assert.equal(s.doc.objects.length,0);s.redo();assert.equal(s.doc.objects.length,1)});
+test('document validation and round trip',()=>{const d=blank();d.objects.push(element('column'));assert.deepEqual(validateDocument(d),[]);assert.equal(parseDocument(JSON.stringify(d)).objects.length,1)});
+test('orthographic projection and section',()=>{const d=blank(),o=element('wall',{x:0,y:0,x2:4000,y2:0});d.objects.push(o);assert.ok(project({x:10,y:20,z:30},'front').y===-30);assert.equal(sectionAt(d,'x',2000).length,1)});
+test('quantities and SVG',()=>{const d=blank();d.objects.push(element('wall',{x:0,y:0,x2:4000,y2:0}));assert.equal(quantities(d)[0].lengthMM,4000);assert.match(planSVG(d),/<svg/)});
+test('host dependency deletion',()=>{const d=blank(),a=element('wall'),b=element('window',{hostIds:[a.id]});d.objects=[a,b];removeWithDependents(d,a.id);assert.equal(d.objects.length,0)});

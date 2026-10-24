@@ -1,0 +1,4 @@
+import{finite}from'../geometry/index.js';
+export const TYPES=new Set(['wall','slab','column','beam','line','dimension','door','window','duct','pipe','equipment','conduit','fixture','road']);
+export function validateObject(o){let issues=[];if(!o||typeof o!=='object')return['Not an object'];if(!TYPES.has(o.type))issues.push('Unknown object type');for(const k of ['x','y','x2','y2','z','height','thickness'])if(!finite(o[k]))issues.push('Invalid '+k);if((o.height||0)<0||(o.thickness||0)<0)issues.push('Negative dimension');if(!o.id)issues.push('Missing ID');return issues;}
+export function validateDocument(d){let errors=[];if(!d||!Array.isArray(d.objects))return ['Missing objects collection'];const ids=new Set();for(const [i,o]of d.objects.entries()){for(const e of validateObject(o))errors.push(`Object ${i+1}: ${e}`);if(ids.has(o.id))errors.push('Duplicate object ID: '+o.id);ids.add(o.id)}return errors;}

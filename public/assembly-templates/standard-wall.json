@@ -1,0 +1,8 @@
+{
+  "name": "200 mm Generic Wall",
+  "type": "wall",
+  "thickness": 200,
+  "height": 3000,
+  "material": "Concrete",
+  "classification": "Unassigned"
+}

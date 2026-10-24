@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const js=fs.readFileSync(new URL('../src/app/main.js',import.meta.url),'utf8');
+const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
+test('no duplicate interface IDs',()=>assert.equal(new Set(ids).size,ids.length));
+test('all required control IDs exist',()=>{for(const id of ['tools','stage','gpuStage','gridVisible','snap','endpointSnap','orthogonalWalls','gridStep','applyProps','delete','duplicate','undo','redo','save','open','review','fitView','objectList','engineStatus'])assert.ok(ids.includes(id),id)});
+test('left toolbar dynamically binds drawing click handlers',()=>{assert.match(js,/b\.onclick=\(\)=>setTool\(t\)/);assert.match(js,/pendingStart/);assert.match(js,/pointerdown/);assert.match(js,/pointerup/)});
+test('GPU faults isolated from drawing model state',()=>{assert.match(js,/function sync\(\)\{if\(gpu\)\{try/);assert.match(js,/exactReady=false/)});

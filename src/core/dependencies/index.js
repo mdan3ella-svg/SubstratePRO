@@ -1,0 +1,2 @@
+export function dependents(doc,id){return doc.objects.filter(o=>Array.isArray(o.hostIds)&&o.hostIds.includes(id)).map(o=>o.id)}
+export function removeWithDependents(doc,id){const ids=new Set([id]);let changed=true;while(changed){changed=false;for(const o of doc.objects)if(o.hostIds?.some(x=>ids.has(x))&&!ids.has(o.id)){ids.add(o.id);changed=true}}doc.objects=doc.objects.filter(o=>!ids.has(o.id));return [...ids]}

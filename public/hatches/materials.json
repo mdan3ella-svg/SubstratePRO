@@ -1,0 +1,7 @@
+{
+  "Concrete": "diagonal",
+  "Steel": "cross",
+  "Masonry": "brick",
+  "Timber": "horizontal",
+  "Glass": "solid"
+}

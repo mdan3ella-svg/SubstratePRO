@@ -1,0 +1,2 @@
+import{prism}from'../../core/geometry/index.js';
+export function sectionAt(doc,axis='x',value=0){const pieces=[];for(const o of doc.objects){if(o.visible===false)continue;const v=prism(o),coords=[...v.bottom,...v.top].map(p=>p[axis]);if(value<Math.min(...coords)||value>Math.max(...coords))continue;const other=axis==='x'?'y':'x';const q=[...v.bottom,...v.top];pieces.push({id:o.id,type:o.type,material:o.material,from:Math.min(...q.map(p=>p[other])),to:Math.max(...q.map(p=>p[other])),bottom:Math.min(...q.map(p=>p.z)),top:Math.max(...q.map(p=>p.z))});}return pieces;}

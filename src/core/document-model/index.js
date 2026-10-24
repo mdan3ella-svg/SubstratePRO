@@ -1,0 +1,6 @@
+import{validateDocument}from'../validation/index.js';
+const id=()=>`SP-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
+export const blank=()=>({schema:'substrate-pro/0.5',name:'Untitled AEC Detail',units:'mm',levels:[{id:'L1',name:'Level 1',elevation:0}],objects:[],settings:{grid:250,snap:true,gridVisible:true}});
+export const copy=x=>structuredClone(x);
+export function element(type,fields={}){return{id:id(),type,name:`${type[0].toUpperCase()+type.slice(1)} element`,discipline:({wall:'architecture',slab:'architecture',door:'architecture',window:'architecture',column:'structure',beam:'structure',duct:'mechanical',equipment:'mechanical',pipe:'plumbing',fixture:'plumbing',conduit:'electrical',road:'civil'})[type]||'documentation',level:'L1',material:'Concrete',classification:'',x:0,y:0,x2:1000,y2:1000,z:0,height:3000,thickness:200,visible:true,...fields};}
+export function parseDocument(raw){const d=typeof raw==='string'?JSON.parse(raw):copy(raw);if(d?.schema==='substrate-pro-core-1'){d.schema='substrate-pro/0.5';d.objects=d.objects.map(o=>element(o.type,{...o,height:o.height??o.h??3000,thickness:o.thickness??o.t??200}));d.levels=[{id:'L1',name:'Level 1',elevation:0}];d.settings={grid:250,snap:true,gridVisible:true};}const issues=validateDocument(d);if(issues.length)throw Error(issues.slice(0,5).join('; '));return d;}
