@@ -47,3 +47,7 @@ The build now creates site/.nojekyll automatically. GitHub web uploads may omit 
 The installed `opencascade.wasm.js` is an ES module. The previous adapter injected the file as a *classic script*, causing a browser SyntaxError and no global factory. `occt-adapter.mjs` now imports it using `await import(js.href)` and calls the exported factory with the locally deployed WASM URL. Redeploy the updated module (the GitHub Actions build will copy it into `site/`).
 
 Do not use the old classic-script global `window.opencascade` loader. After successful deployment, visit `occt-test.html` and explicitly run the real box/Boolean checks. This patch has been syntax tested, but runtime WASM initialization cannot be proven here without an installed distribution.
+
+
+## v4.5.7 cache prevention
+Upload all files, including new root `occt-adapter-v457.mjs`, `occt-ui.mjs`, `occt-test.html`, `index.html`, and `scripts/build-site.mjs`. See DEPLOY_FIX_457.md.
