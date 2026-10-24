@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {wallMiterPolygons} from '../src/core/geometry/wall-miters.js';
+import {Store} from '../src/core/transactions/index.js';
+import {blank,element} from '../src/core/document-model/index.js';
+import {connectionSchedule} from '../src/detailcore/connections/index.js';
+import {codeScreen} from '../src/audit/code-screen.js';
+import {exportEditableMapping,applyEditableMapping} from '../src/interoperability/ifc/mapping.js';
+test('two orthogonal chain walls share miter boundaries',()=>{const a=element('wall',{x:0,y:0,x2:1000,y2:0,thickness:200,chainId:'C'}),b=element('wall',{x:1000,y:0,x2:1000,y2:1000,thickness:200,chainId:'C'});const r=wallMiterPolygons([a,b]);assert.equal(r.pairs.length,1);assert.deepEqual(r.polygons.get(a.id)[1],r.polygons.get(b.id)[0]);assert.deepEqual(r.polygons.get(a.id)[2],r.polygons.get(b.id)[3]);});
+test('dimensions update after commit undo redo and replace',()=>{const s=new Store(blank()),w=element('wall',{x:0,y:0,x2:1000,y2:0}),d=element('dimension',{sourceId:w.id});s.commit(x=>x.objects.push(w,d));assert.equal(s.doc.objects[1].measuredMM,1000);s.commit(x=>x.objects[0].x2=2500);assert.equal(s.doc.objects[1].measuredMM,2500);s.undo();assert.equal(s.doc.objects[1].measuredMM,1000);s.redo();assert.equal(s.doc.objects[1].measuredMM,2500)});
+test('connection candidates do not claim engineered design',()=>{const b=element('beam',{x:0,y:0,x2:1000,y2:0,z:2500,height:500}),c=element('column',{x:500,y:-100,x2:600,y2:100,z:0,height:2500});const out=connectionSchedule({objects:[b,c]});assert.equal(out.connections.length,1);assert.equal(out.connections[0].designStatus,'ENGINEERING REQUIRED')});
+test('building code screen never marks project compliant',()=>{const v=codeScreen(blank());assert.ok(v.checks.every(x=>x.status!=='pass'));assert.ok(v.checks.some(x=>x.status==='missing'))});
+test('editable mapping modifies element but is explicitly not IFC STEP',()=>{const d=blank(),w=element('wall');d.objects.push(w);const m=exportEditableMapping(d);assert.match(m.caveat,/Not an IFC STEP/);m.objects[0].geometry.x2=9000;assert.equal(applyEditableMapping(d,m),1);assert.equal(d.objects[0].x2,9000)});
