@@ -9,9 +9,11 @@ for(const file of ['opencascade.js','opencascade.wasm','manifest.json']){
 }
 if(fs.statSync(path.join(vendor,'opencascade.wasm')).size<10_000_000)throw Error('OCCT WASM appears truncated');
 fs.rmSync(target,{recursive:true,force:true});fs.mkdirSync(target,{recursive:true});
-const pages=['index.html','cad-workspace.html','occt-test.html','.nojekyll'];
+const pages=['index.html','cad-workspace.html','occt-test.html'];
 const modules=['occt-adapter.mjs','occt-ui.mjs','cad-workspace.mjs','cad-workspace-ui.mjs'];
 for(const f of [...pages,...modules]){if(!fs.existsSync(path.join(root,f)))throw Error('Missing site file: '+f);fs.copyFileSync(path.join(root,f),path.join(target,f));}
+// Generate this marker in the published output: GitHub's web uploader often omits empty dotfiles.
+fs.writeFileSync(path.join(target,'.nojekyll'),'');
 fs.mkdirSync(path.join(target,'vendor/opencascade'),{recursive:true});
 for(const f of ['opencascade.js','opencascade.wasm','manifest.json'])fs.copyFileSync(path.join(vendor,f),path.join(target,'vendor/opencascade',f));
 const m=JSON.parse(fs.readFileSync(path.join(vendor,'manifest.json'),'utf8'));
