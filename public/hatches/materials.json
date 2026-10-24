@@ -3,5 +3,8 @@
   "Steel": "cross",
   "Masonry": "brick",
   "Timber": "horizontal",
-  "Glass": "solid"
+  "Glass": "solid",
+  "Gypsum": "staggered",
+  "Insulation": "zigzag",
+  "Earth": "dots"
 }

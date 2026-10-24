@@ -1,7 +1,8 @@
 {
   "door": "Door swing",
-  "window": "Window",
+  "window": "Window glazing",
   "fixture": "Fixture",
   "equipment": "Equipment",
-  "conduit": "Conduit"
+  "conduit": "Conduit",
+  "furniture": "Furniture"
 }

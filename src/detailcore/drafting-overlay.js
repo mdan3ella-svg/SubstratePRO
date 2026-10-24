@@ -1,31 +1,38 @@
-import {footprint,project,length} from '../core/geometry/index.js';
-import {drawingStyle,tagFor,descriptorFor,dimensionText} from './annotations/index.js';
+import {footprint,length} from '../core/geometry/index.js';
+import {drawingStyle,tagFor,descriptorFor,dimensionText,labelPointFor} from './annotations/index.js';
+import {drawHatchPattern,hatchFor} from './hatch-engine/index.js';
+import {drawPlanSymbol} from './symbol-registry/index.js';
 export const defaultDrafting={lod:'detail',autoDimensions:true,autoTags:true,materialHatches:true};
-export function draftingOverlay(ctx,objects,view,map,settings=defaultDrafting){
+const SYMBOL_TYPES=new Set(['door','window','fixture','equipment','furniture']);
+export function draftingOverlay(ctx,objects,view,map,settings=defaultDrafting,opts={}){
  if(view!=='plan'&&view!=='top')return;
- const detail=settings.lod==='detail', schematic=settings.lod==='schematic';
+ const detail=settings.lod==='detail', schematic=settings.lod==='schematic', coordination=settings.lod==='coordination';
  ctx.save();ctx.lineJoin='miter';ctx.lineCap='square';
  for(const o of objects){
-  const footprintPoints=footprint(o).map(([x,y])=>map(project({x,y,z:0},'plan')));
-  const style=drawingStyle(o);if(o.type==='dimension'){
-   if(settings.autoDimensions) drawDimension(ctx,map(project({x:o.x,y:o.y,z:0},'plan')),map(project({x:o.x2,y:o.y2,z:0},'plan')),dimensionText(o),style.stroke,18);
+  const style=drawingStyle(o);
+  if(o.type==='dimension'){
+   if(settings.autoDimensions) drawDimension(ctx,map({x:o.x,y:o.y}),map({x:o.x2,y:o.y2}),dimensionText(o),style.stroke,18);
    continue;
   }
-  if(footprintPoints.length!==4)continue;
-  ctx.beginPath();footprintPoints.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=style.fill;ctx.fill();ctx.strokeStyle=style.stroke;ctx.lineWidth=schematic?1:style.line;ctx.stroke();
-  if(detail&&settings.materialHatches){
-   ctx.save();ctx.clip();const xs=footprintPoints.map(p=>p.x),ys=footprintPoints.map(p=>p.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-   ctx.strokeStyle=style.stroke;ctx.globalAlpha=.24;ctx.lineWidth=.75;
-   const span=Math.min(800,Math.max(maxX-minX,maxY-minY));const step=o.material==='Concrete'?12:o.material==='Steel'?8:o.material==='Timber'?17:15;
-   if(span>2&&span<800){ctx.beginPath();for(let d=-span;d<2*span;d+=step){ctx.moveTo(minX+d,minY);ctx.lineTo(minX+d-span,maxY)}ctx.stroke();}
-   ctx.restore();
+  if(SYMBOL_TYPES.has(o.type)){
+   drawPlanSymbol(ctx,o,map,style);
+   if(settings.autoTags){
+    const a=labelPointFor(o);const p=map(a);label(ctx,tagFor(o),p.x,p.y-6,style.stroke,true);
+    if(detail)label(ctx,descriptorFor(o),p.x,p.y+11,style.stroke,false);
+   }
+   continue;
   }
-  const p1=map(project({x:o.x,y:o.y,z:0},'plan')),p2=map(project({x:o.x2,y:o.y2,z:0},'plan'));
+  const ptsWorld=footprint(o).map(([x,y])=>({x,y}));
+  const footprintPoints=ptsWorld.map(map);
+  if(footprintPoints.length!==4)continue;
+  ctx.beginPath();footprintPoints.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=style.fill;ctx.fill();ctx.strokeStyle=o.id===opts.selected?'#e17d25':style.stroke;ctx.lineWidth=schematic?1:style.line;ctx.stroke();
+  if(detail&&settings.materialHatches){drawHatchPattern(ctx,footprintPoints,hatchFor(o.material),map({x:ptsWorld[0].x,y:ptsWorld[0].y}))}
+  const p1=map({x:o.x,y:o.y}),p2=map({x:o.x2,y:o.y2});
   const distance=Math.hypot(p2.x-p1.x,p2.y-p1.y);
   if(settings.autoTags&&(!schematic||distance>65)){
-   const mid={x:(p1.x+p2.x)/2,y:(p1.y+p2.y)/2};
+   const anchor=labelPointFor(o),mid=map(anchor);
    label(ctx,tagFor(o),mid.x,mid.y-6,style.stroke,true);
-   if(detail&&distance>100)label(ctx,`${o.material} · ${Math.round(o.thickness||0)} mm`,mid.x,mid.y+11,style.stroke,false);
+   if((detail||coordination)&&distance>90)label(ctx,`${o.material} · ${Math.round(o.thickness||0)} mm`,mid.x,mid.y+11,style.stroke,false);
   }
   if(settings.autoDimensions&&detail&&['wall','beam','duct','pipe','road','conduit'].includes(o.type)&&distance>38){drawDimension(ctx,p1,p2,`${Math.round(length(o)).toLocaleString('en-US')} mm`,style.stroke,23);}
  }

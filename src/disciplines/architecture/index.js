@@ -1,2 +1,2 @@
 export const discipline="architecture";
-export const tools=["wall", "slab", "door", "window"];
+export const tools=["wall", "slab", "door", "window", "furniture"];
