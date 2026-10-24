@@ -1,4 +1,5 @@
-/* Real OpenCascade.js 1.1.1 WASM adapter: no polygon-kernel fallbacks. */
+/* SUBSTRATE OCCT ADAPTER v4.5.5 — ES module factory, pinned 1.1.1 */
+export const OCCT_ADAPTER_VERSION="4.5.5-esm-factory";
 let loadPromise;
 function ctor(oc,name,preferred=[]){for(const n of preferred)if(typeof oc[n]==='function')return oc[n];const matches=Object.keys(oc).filter(n=>n===name||n.startsWith(name+'_')&&typeof oc[n]==='function');if(matches.length===1)return oc[matches[0]];throw Error(`OCCT constructor ${name} overload not resolved (${matches.join(',')})`)}
 function create(oc,name,args,preferred=[]){return new (ctor(oc,name,preferred))(...args)}
@@ -13,8 +14,8 @@ export async function initializeKernel(){
   // opencascade.wasm.js in the pinned 1.1.1 package uses ES module exports.
   // Loading it as a classic <script> triggers "Unexpected token 'export'".
   const module=await import(js.href);
-  const factory=module.default || module.opencascade || module.initOpenCascade;
-  if(typeof factory!=='function')throw Error('OCCT ES module did not export a callable factory; exports: '+Object.keys(module).join(', '));
+  const factory=[module.default,module.opencascade,module.initOpenCascade].find(v=>typeof v==='function');
+  if(!factory)throw Error('OCCT factory export missing in v4.5.5 loader. Module exports: '+Object.keys(module).join(', ')+'; verify site/occt-adapter.mjs and vendor files deploy together.');
   const oc=await factory({locateFile:(file)=>file.endsWith('.wasm')?wasm.href:new URL(file,js).href});
   if(!oc||!Object.keys(oc).some(k=>k.startsWith('BRepPrimAPI_MakeBox')))throw Error('OCCT initialized without BRepPrimAPI');
   return oc;
