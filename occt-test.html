@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SUBSTRATE PRO | OCCT Kernel Acceptance Test</title><style>body{font:15px system-ui;max-width:780px;margin:4rem auto;padding:1rem;color:#19383e}button{padding:12px 18px;cursor:pointer;background:#174e55;color:#fff;border:0;border-radius:7px}pre{white-space:pre-wrap;border:1px solid #ccdce0;padding:20px;background:#f5fafb}</style><h1>OpenCascade.js kernel acceptance test</h1><p>Requires pinned 1.1.1 WASM to be installed into <code>vendor/opencascade/</code> and hosted via HTTP.</p><button id="go">Initialize OCCT and test solid Boolean</button><pre id="result">Not tested</pre><script type="module">
-import {initializeKernel,makeBox,booleanShape,validateShape,OCCT_ADAPTER_VERSION} from './occt-adapter-v458.mjs';
+import {initializeKernel,makeBox,booleanShape,validateShape,OCCT_ADAPTER_VERSION} from './occt-adapter-v459.mjs';
 const report=document.getElementById('result'); report.textContent='Adapter '+OCCT_ADAPTER_VERSION+' loaded. Click to initialize kernel.';
 document.getElementById('go').onclick=async()=>{report.textContent='Loading kernel...';try{
  const oc=await initializeKernel();const a=makeBox(oc,[0,0,0,100,100,100]);const b=makeBox(oc,[50,0,0,150,100,100]);
