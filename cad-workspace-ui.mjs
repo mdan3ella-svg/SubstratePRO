@@ -22,3 +22,20 @@ $('compute').onclick=async()=>{try{if(!oc)oc=await loadCADKernel();await doc.reb
 let down=null;view.onpointerdown=e=>{down={x:e.clientX,y:e.clientY,spin,tilt};view.setPointerCapture(e.pointerId)};view.onpointermove=e=>{if(!down)return;spin=down.spin+(e.clientX-down.x)*.008;tilt=Math.max(-1.4,Math.min(1.4,down.tilt+(e.clientY-down.y)*.008));render()};view.onpointerup=()=>down=null;view.onwheel=e=>{e.preventDefault();zoom=Math.max(.2,Math.min(6,zoom*Math.exp(-e.deltaY*.001)));render()};
 $('section').onclick=()=>{try{const rows=sectionData(doc,{axis:$('axis').value,position:Number($('station').value)});const min=Math.min(0,...rows.map(r=>r.section.u0));const max=Math.max(1,...rows.map(r=>r.section.u1));const scale=540/(max-min+1);const shapes=rows.map(r=>{const q=r.section,x=20+(q.u0-min)*scale,y=330-q.z1*scale,w=(q.u1-q.u0)*scale,h=(q.z1-q.z0)*scale;return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#cut)" stroke="#173d45" stroke-width="1.5"/><text x="${x}" y="${y-4}" font-size="9">${r.id}</text>`}).join('');$('sheet').innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" style="width:100%;border:1px solid #ddd"><defs><pattern id="cut" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 8L8 0" stroke="#789ca2" stroke-width=".9"/></pattern></defs>${shapes}</svg>`;message('Section profiles regenerated from parametric envelopes; Boolean cut topology not yet included.')}catch(e){message(e.message)}};
 refresh();
+
+// Same-origin integration with the main SUBSTRATE BIM document. Only parametric
+// envelopes are synchronized: OCCT shapes are rebuilt from source parameters.
+const BRIDGE_CHANNEL='SUBSTRATE_OCCT_BRIDGE_V1';
+function notifyBridge(action,extra={}){if(window.parent!==window)window.parent.postMessage({channel:BRIDGE_CHANNEL,action,...extra},location.origin)}
+window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==window.parent||event.data?.channel!==BRIDGE_CHANNEL)return;
+ const d=event.data;
+ try{
+  if(d.action==='load'){
+   const clean={schema:'substrate-occt-features/1',units:'mm',features:d.document.features,operations:[]};
+   doc=CADDocument.fromJSON(JSON.stringify(clean));selected='';meshDraw.forEach(x=>{if(gl){gl.deleteBuffer(x.vbo);gl.deleteBuffer(x.ibo)}});meshDraw=[];refresh();render();notifyBridge('document',{document:doc.record});message(`BIM synced: ${doc.record.features.length} features; click Build OCCT shapes to tessellate and view.`);
+  }
+  if(d.action==='export')notifyBridge('document',{document:doc.record});
+ }catch(e){notifyBridge('error',{message:e.message});message('BIM bridge import failed: '+e.message)}
+});
+for(const id of ['add','edit','bool']){document.getElementById(id)?.addEventListener('click',()=>notifyBridge('changed',{document:doc.record}))}
+window.addEventListener('load',()=>notifyBridge('ready'));

@@ -10,7 +10,7 @@ for(const file of ['opencascade.js','opencascade.wasm','manifest.json']){
 if(fs.statSync(path.join(vendor,'opencascade.wasm')).size<10_000_000)throw Error('OCCT WASM appears truncated');
 fs.rmSync(target,{recursive:true,force:true});fs.mkdirSync(target,{recursive:true});
 const pages=['index.html','cad-workspace.html','occt-test.html'];
-const modules=['occt-adapter.mjs','occt-adapter-v459.mjs','occt-ui.mjs','cad-workspace.mjs','cad-workspace-ui.mjs'];
+const modules=['occt-adapter.mjs','occt-adapter-v459.mjs','occt-ui.mjs','cad-workspace.mjs','cad-workspace-ui.mjs','bim-occt-bridge.mjs','bim-occt-main.mjs'];
 for(const f of [...pages,...modules]){if(!fs.existsSync(path.join(root,f)))throw Error('Missing site file: '+f);fs.copyFileSync(path.join(root,f),path.join(target,f));}
 // Generate this marker in the published output: GitHub's web uploader often omits empty dotfiles.
 // Deployment guard: never publish an old adapter with the pinned ES-module kernel.

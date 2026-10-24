@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {elementBounds,exportBIMFeatures,applyFeatureEdits} from '../bim-occt-bridge.mjs';
+const wall={id:'W1',type:'wall',x1:0,y1:0,x2:4000,y2:0,z:0,height:3000,thickness:200,material:'Concrete',level:'L1'};
+assert.deepEqual(elementBounds(wall).bounds,[0,-100,0,4000,100,3000]);
+assert.match(elementBounds({...wall,x2:3000,y2:3000}).reason,/Diagonal/);
+const slab={id:'S1',type:'slab',x1:0,y1:0,x2:5000,y2:4000,z:-100,height:250,thickness:0};
+assert.deepEqual(elementBounds(slab).bounds,[0,0,-100,5000,4000,150]);
+const doc={elements:[{...wall},{...slab}]};const extracted=exportBIMFeatures(doc);
+assert.equal(extracted.features.length,2);
+extracted.features[0].params.bounds=[0,-125,0,5000,125,3600];
+const result=applyFeatureEdits(doc,extracted);
+assert.equal(result.changes.length,2);assert.equal(doc.elements[0].x2,5000);assert.equal(doc.elements[0].thickness,250);assert.equal(doc.elements[0].height,3600);
+console.log('BIM ↔ OCCT feature mapping: passed');
