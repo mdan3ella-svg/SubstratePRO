@@ -20,9 +20,10 @@ export function shouldStartMove(down,current,thresholdPx=6){return Math.hypot((c
 /** Canvas annotations are measured in CSS pixels. Model dimensions remain mm.
  * Drawing scale is metadata until a physical paper sheet is rendered.
  */
-export function annotationMetrics(scale=100,zoom=1){
+export function annotationMetrics(scale=100,zoom=1,globalScale=1){
  const drawingScale=Math.max(5,Math.min(1000,Number(scale)||100));
- return {drawingScale,textPx:12,dimOffsetPx:34,clearancePx:12,
+ const size=Math.max(.65,Math.min(2.2,Number(globalScale)||1));
+ return {drawingScale,globalScale:size,textPx:12*size,dimOffsetPx:34*size,clearancePx:12*size,
    extensionGapPx:6,arrowPx:5,paperTextMM:2.5,paperDimOffsetMM:8};
 }
 /** Stable pointer-centered zoom independent of browser wheel delta units. */

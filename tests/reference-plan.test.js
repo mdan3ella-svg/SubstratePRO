@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {modelPlanSegments,combinedPlanBounds,planCameraForBounds} from '../src/detailcore/reference-plan/index.js';
+test('3D mesh reference projects to millimetre plan coordinates',()=>{const p={count:3,getX:i=>[0,2,0][i],getY:i=>[0,0,3][i],getZ:()=>2},root={updateMatrixWorld(){},traverse(fn){fn({isMesh:true,geometry:{getAttribute:()=>p,index:null}})}};const r=modelPlanSegments(root);assert.equal(r.segments.length,3);assert.equal(r.bounds.x2,2000);assert.equal(r.bounds.y2,3000)});
+test('underlay fit respects rotation and model coordinates',()=>{const b=combinedPlanBounds([],[{x:100,y:200,widthMM:400,heightMM:200,rotation:90,visible:true}]);assert.equal(Math.round(b.x),-100);assert.equal(Math.round(b.y2),600);const c=planCameraForBounds(b,800,600);assert.ok(c.scale>0);assert.ok(Math.abs(c.cx)<1e-8);assert.equal(c.cy,-400)});
+test('reference models contribute to plan extents',()=>{const b=combinedPlanBounds([] ,[],[{bounds:{x:10000,y:0,x2:12000,y2:4000}}]);assert.equal(b.x2,12000)});
