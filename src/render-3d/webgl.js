@@ -14,7 +14,7 @@ export class GPUViewer{
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0xf9fbfc);
   this.perspectiveCamera=new THREE.PerspectiveCamera(45,1,.005,100000);this.orthoCamera=new THREE.OrthographicCamera(-8,8,8,-8,.005,100000);this.camera=this.perspectiveCamera;for(const c of [this.perspectiveCamera,this.orthoCamera])c.up.set(0,0,1);this.camera.position.set(8,-10,8);this.activeView='perspective';this.modelSpan=15;
   this.controls=new OrbitControls(this.camera,canvas);this.controls.enableDamping=true;this.controls.dampingFactor=.1;
-  this.controls.screenSpacePanning=true;this.controls.target.set(0,0,0);
+  this.controls.screenSpacePanning=true;this.controls.target.set(0,0,0);this.controls.minDistance=.05;this.controls.maxDistance=10000;this.controls.minZoom=.02;this.controls.maxZoom=150;
   this.scene.add(new THREE.HemisphereLight(0xffffff,0x8196a3,2.3));
   const light=new THREE.DirectionalLight(0xffffff,2.8);light.position.set(8,-12,16);light.castShadow=true;light.shadow.mapSize.set(2048,2048);light.shadow.camera.left=-50;light.shadow.camera.right=50;light.shadow.camera.top=50;light.shadow.camera.bottom=-50;light.shadow.bias=-.0002;this.scene.add(light);this.keyLight=light;
   this.scene.add(new THREE.AmbientLight(0xffffff,.3));
@@ -22,10 +22,12 @@ export class GPUViewer{
   this.axis=new THREE.AxesHelper(1.25);this.scene.add(this.axis);
   this.group=new THREE.Group();this.scene.add(this.group);this.style='shaded';this.ao=0.55;this.textures=new Map();this.edgeColor=0x263a43;this.ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.ShadowMaterial({opacity:.28}));this.ground.receiveShadow=true;this.ground.position.z=-.025;this.scene.add(this.ground);
   this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this._start=null;this.mode='mesh';
+  this.gizmo=document.createElement('canvas');this.gizmo.width=110;this.gizmo.height=110;this.gizmo.setAttribute('aria-label','3D orientation axes');Object.assign(this.gizmo.style,{position:'absolute',right:'12px',bottom:'12px',width:'110px',height:'110px',pointerEvents:'none',zIndex:'4'});if(getComputedStyle(canvas.parentElement).position==='static')canvas.parentElement.style.position='relative';canvas.parentElement.appendChild(this.gizmo);
+
   canvas.addEventListener('pointerdown',e=>{this._start={x:e.clientX,y:e.clientY}});
   canvas.addEventListener('pointerup',e=>{if(!this._start||Math.hypot(e.clientX-this._start.x,e.clientY-this._start.y)>5)return;this.pick(e)});
   this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas.parentElement);
-  this.running=true;const tick=()=>{if(!this.running)return;this.resize();this.controls.update();this.renderer.render(this.scene,this.camera);requestAnimationFrame(tick)};requestAnimationFrame(tick);
+  this.running=true;const tick=()=>{if(!this.running)return;this.resize();this.controls.update();this.renderer.render(this.scene,this.camera);this.drawGizmo();requestAnimationFrame(tick)};requestAnimationFrame(tick);
  }
  resize(){const w=this.canvas.clientWidth,h=this.canvas.clientHeight;if(w<2||h<2)return;if(this.renderer.domElement.width!==Math.floor(w*this.renderer.getPixelRatio())||this.renderer.domElement.height!==Math.floor(h*this.renderer.getPixelRatio()))this.renderer.setSize(w,h,false);this.perspectiveCamera.aspect=w/h;this.perspectiveCamera.updateProjectionMatrix();this.updateOrthoFrustum(w/h)}
  updateOrthoFrustum(aspect){
@@ -37,9 +39,16 @@ export class GPUViewer{
   const old=this.camera,target=this.controls.target.clone(),distance=Math.max(1,old.position.distanceTo(target));
   const dir=old.position.clone().sub(target).normalize();next.position.copy(target).addScaledVector(dir,distance);
   this.controls.dispose();this.camera=next;this.controls=new OrbitControls(this.camera,this.canvas);
-  this.controls.enableDamping=true;this.controls.dampingFactor=.1;this.controls.screenSpacePanning=true;this.controls.target.copy(target);
+  this.controls.enableDamping=true;this.controls.dampingFactor=.1;this.controls.screenSpacePanning=true;this.controls.target.copy(target);this.controls.minDistance=.05;this.controls.maxDistance=10000;this.controls.minZoom=.02;this.controls.maxZoom=150;
   this.controls.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.PAN};
   this.resize();
+ }
+ drawGizmo(){
+  const ctx=this.gizmo.getContext('2d');if(!ctx)return;ctx.clearRect(0,0,110,110);
+  const q=this.camera.quaternion.clone().invert(),origin={x:55,y:55};
+  const axes=[{vec:new THREE.Vector3(1,0,0),label:'X',color:'#ce5260'},{vec:new THREE.Vector3(0,1,0),label:'Y',color:'#38a777'},{vec:new THREE.Vector3(0,0,1),label:'Z',color:'#4b83d6'}];
+  axes.sort((a,b)=>a.vec.clone().applyQuaternion(q).z-b.vec.clone().applyQuaternion(q).z);
+  for(const axis of axes){const v=axis.vec.applyQuaternion(q);const x=origin.x+v.x*31,y=origin.y-v.y*31;ctx.strokeStyle=axis.color;ctx.fillStyle=axis.color;ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(origin.x,origin.y);ctx.lineTo(x,y);ctx.stroke();ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='bold 11px Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(axis.label,x,y+.5)}
  }
  pick(e){const r=this.canvas.getBoundingClientRect();this.pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hit=this.raycaster.intersectObjects(this.group.children,true)[0];if(hit){let o=hit.object;while(o&&!o.userData.id)o=o.parent;this.onSelect(o?.userData.id||null)}}
  clear(){for(const obj of [...this.group.children]){this.group.remove(obj);obj.traverse(n=>{n.geometry?.dispose();if(n.material)Array.isArray(n.material)?n.material.forEach(m=>m.dispose()):n.material.dispose()})}}
@@ -95,7 +104,7 @@ export class GPUViewer{
   const distance=Math.max(5,this.modelSpan*1.5);
   this.controls.target.copy(center);
   const def=viewDefinition(this.activeView);
-  const dir=new THREE.Vector3(...def.direction).normalize();this.camera.position.copy(center).addScaledVector(dir,distance);
+  const dir=new THREE.Vector3(...def.direction).normalize();this.camera.up.set(...def.up);this.camera.position.copy(center).addScaledVector(dir,distance);
   for(const c of [this.perspectiveCamera,this.orthoCamera]){c.near=.005;c.far=Math.max(1000,distance*100);c.updateProjectionMatrix()}
   this.updateOrthoFrustum(aspect);this.controls.update();
  }
@@ -112,5 +121,5 @@ export class GPUViewer{
   this.controls.enableRotate=true;this.controls.target.copy(target);this.controls.update();
  }
  resetOrbit(){this.preset(this.activeView)}
- dispose(){this.running=false;this.observer.disconnect();this.controls.dispose();this.clear();for(const tex of this.textures.values())tex.dispose();this.ground.geometry.dispose();this.ground.material.dispose();this.renderer.dispose()}
+ dispose(){this.running=false;this.gizmo?.remove();this.observer.disconnect();this.controls.dispose();this.clear();for(const tex of this.textures.values())tex.dispose();this.ground.geometry.dispose();this.ground.material.dispose();this.renderer.dispose()}
 }
