@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {element} from '../src/core/document-model/index.js';
+import {idsInRectangle,translateObject,reflectObject,clonesOf,arrayOffsets,chamferCorner,roundedCornerPoints,arcWallSegments} from '../src/detailcore/modify/index.js';
+test('cross selection includes intersecting; window excludes partly outside',()=>{const a=element('wall',{x:-500,y:0,x2:1500,y2:0,thickness:200});assert.deepEqual(idsInRectangle([a],{x:0,y:-200},{x:1000,y:200},'crossing'),[a.id]);assert.deepEqual(idsInRectangle([a],{x:0,y:-200},{x:1000,y:200},'window'),[])});
+test('translation and mirror preserve instance ids',()=>{const o=element('wall',{x:100,y:50,x2:1100,y2:50});const id=o.id;translateObject(o,100,-50);reflectObject(o,'x',500);assert.equal(o.id,id);assert.equal(o.x,800);assert.equal(o.y,0)});
+test('clones are distinct and array count correct',()=>{const o=element('beam',{x:0,y:0,x2:1000,y2:0});const offsets=arrayOffsets(3,2,2000,3000),clones=clonesOf([o],offsets);assert.equal(clones.length,5);assert.equal(new Set(clones.map(o=>o.id)).size,5);assert.ok(clones.every(x=>x.id!==o.id))});
+test('chamfer and fillet yield corner connector points',()=>{const a={x:0,y:0,x2:1000,y2:0},b={x:1000,y:0,x2:1000,y2:1000};const p=chamferCorner(a,b,200);assert.deepEqual(p,[{x:800,y:0},{x:1000,y:200}]);const curve=roundedCornerPoints(a,b,200,8);assert.equal(curve.length,9);assert.ok(Math.hypot(curve[0].x-800,curve[0].y)<1)});
+test('curved wall endpoints coincide with chord ends',()=>{const pts=arcWallSegments({x:0,y:0},{x:4000,y:0},600,16);assert.equal(pts.length,17);assert.ok(Math.hypot(pts[0].x,pts[0].y)<.001);assert.ok(Math.hypot(pts.at(-1).x-4000,pts.at(-1).y)<.001)});
