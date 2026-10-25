@@ -1,3 +1,4 @@
+import {auditDrawing,drawingRegister,issueReportText} from '../audit/drawing-coordination.js';
 import {idsInRectangle,translateObject,reflectObject,clonesOf,arrayOffsets,chamferCorner,roundedCornerPoints,arcWallSegments} from '../detailcore/modify/index.js';
 import {installDetailCamera} from '../detailcore/section-camera/dialog.js';
 import {ensureHierarchy,prepareElement,nearestGridIntersection,makeGridFoundation,makeGridFrame,makeGridSlab,coordinationReport,STAGES,stageForType} from '../detailcore/construction-hierarchy/index.js';
@@ -284,3 +285,15 @@ if(hierarchyPanel){
 
 // Section detail camera is independent of the main BIM renderer.
 installDetailCamera({canvas,getCamera:()=>camera,toWorld,getDoc:()=>renderDoc(),notice,setView});
+
+// Live document-coordination workspace; updates on committed model transactions.
+const auditSection=document.createElement('section');auditSection.className='drawingAuditPanel';
+auditSection.innerHTML=`<h2>Live Drawing Auditor</h2><p>Connection, layer, level, dimension and discipline review. Screening only; no certified approval.</p><label class="check"><input type="checkbox" id="auditLive" checked> Live review on model edits</label><div class="toolgrid"><button type="button" id="auditNow">Audit Drawing</button><button type="button" id="auditRegister">Drawing Register</button><button type="button" id="auditExport">Export QA Report</button></div><p id="auditSummary" aria-live="polite">No drawing audit yet.</p><div id="auditIssueList" class="auditIssueList"></div>`;
+(document.querySelector('.rail.right')||document.querySelector('.rail.left')||document.querySelector('main')).append(auditSection);
+let lastAudit=null,lastRegister=null,auditHandle=null;
+function refreshDrawingAudit(){try{const result=auditDrawing(store.doc);lastAudit=result;lastRegister=drawingRegister(store.doc,result);$('auditSummary').textContent=`${result.checked} objects · ${result.counts.error} errors · ${result.counts.warning} warnings · ${result.counts.info} notices`;const list=$('auditIssueList');list.replaceChildren();for(const finding of result.issues.slice(0,90)){const b=document.createElement('button');b.type='button';b.className='auditFinding';b.textContent=`${finding.severity.toUpperCase()} · ${finding.code} · ${finding.message}`;b.title='Select associated object and inspect in Plan';b.onclick=()=>{const id=finding.ids.find(id=>store.doc.objects.some(o=>o.id===id));if(!id)return;selected=id;selectedIds=new Set([id]);setView('plan');sync();};list.append(b)}if(result.issues.length>90){const note=document.createElement('p');note.textContent=`${result.issues.length-90} additional findings omitted from panel; export for all.`;list.append(note)}}catch(e){$('auditSummary').textContent='Audit error: '+e.message}}
+$('auditNow').onclick=refreshDrawingAudit;
+$('auditRegister').onclick=()=>{if(!lastAudit)refreshDrawingAudit();report(issueReportText(lastAudit,lastRegister));notice('Drawing register shown in report panel')};
+$('auditExport').onclick=()=>{refreshDrawingAudit();const out=issueReportText(lastAudit,lastRegister);download('SUBSTRATE_PRO_Drawing_Audit.txt',out,'text/plain;charset=utf-8')};
+store.subscribe(()=>{if($('auditLive').checked){if(auditHandle)clearTimeout(auditHandle);auditHandle=setTimeout(refreshDrawingAudit,240)}});
+refreshDrawingAudit();
