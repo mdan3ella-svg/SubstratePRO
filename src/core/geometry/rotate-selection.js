@@ -1,0 +1,2 @@
+export function rotatePoint(p,pivot,degrees){const a=degrees*Math.PI/180,c=Math.cos(a),s=Math.sin(a),dx=p.x-pivot.x,dy=p.y-pivot.y;return{x:pivot.x+dx*c-dy*s,y:pivot.y+dx*s+dy*c}}
+export function rotateElements(objects,degrees,pivot){if(!Number.isFinite(+degrees))throw Error('Invalid rotation');return objects.map(o=>{const a=rotatePoint(o,pivot,degrees),b=rotatePoint({x:o.x2,y:o.y2},pivot,degrees);const result={...o,x:a.x,y:a.y,x2:b.x,y2:b.y};if(o.joinPolygon)delete result.joinPolygon;return result})}

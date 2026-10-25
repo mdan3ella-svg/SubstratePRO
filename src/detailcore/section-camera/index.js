@@ -2,9 +2,9 @@ import {prism,footprint} from '../../core/geometry/index.js';
 /** Authoring units are millimetres. The clip volume is axis-aligned; it is a
  * geometric intersection of display polygons, NOT an OpenCascade solid cut. */
 const EPS=1e-8;
-export function makeDetailCamera(point,{width=4000,depth=4000,height=4200,base=0,rotation=0,name='Detail 01',scale=20}={}){
+export function makeDetailCamera(point,{width=4000,depth=4000,height=4200,base=0,rotation=0,name='Detail 01',scale=20,hatchMultiplier=1}={}){
  if(![point.x,point.y,width,depth,height,base,rotation,scale].every(v=>Number.isFinite(Number(v)))||width<=0||depth<=0||height<=0||scale<=0)throw Error('Invalid detail clip');
- return {id:`DT-${Date.now().toString(36)}`,name,anchor:{x:Number(point.x),y:Number(point.y)},width:+width,depth:+depth,height:+height,base:+base,rotation:+rotation,scale:+scale,lod:'350'};
+ return {id:`DT-${Date.now().toString(36)}`,name,anchor:{x:Number(point.x),y:Number(point.y)},width:+width,depth:+depth,height:+height,base:+base,rotation:+rotation,scale:+scale,hatchMultiplier:Number(hatchMultiplier)||1,lod:'350'};
 }
 export function localPoint(p,detail){const a=detail.rotation*Math.PI/180,c=Math.cos(a),s=Math.sin(a),dx=p.x-detail.anchor.x,dy=p.y-detail.anchor.y;return{x:dx*c+dy*s,y:-dx*s+dy*c,z:p.z||0};}
 export function worldPoint(p,detail){const a=detail.rotation*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return{x:detail.anchor.x+p.x*c-p.y*s,y:detail.anchor.y+p.x*s+p.y*c,z:p.z};}

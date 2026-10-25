@@ -2,6 +2,7 @@ import {footprint} from '../core/geometry/index.js';
 import {drawingStyle} from '../detailcore/annotations/index.js';
 import {layoutAnnotations} from '../detailcore/annotations/layout.js';
 import {svgPatternDefs,svgFillFor} from '../detailcore/hatch-engine/index.js';
+import {hatchSpec} from '../detailcore/hatch-engine/controls.js';
 import {svgSymbol} from '../detailcore/symbol-registry/index.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 const n=x=>Math.round(Number(x)*100)/100;
@@ -18,7 +19,7 @@ export function planSVG(doc,options={}){
   const style=drawingStyle(o),pts=footprint(o).map(([x,y])=>`${n(x)},${n(-y)}`).join(' ');
   let g='';if(o.type==='dimension')return '';
   if(SYMBOL_TYPES.has(o.type))g=svgSymbol(o,style);
-  else g=`<polygon points="${pts}" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${n(style.line*scale*0.18)}"/><polygon points="${pts}" fill="${svgFillFor(o.material)}"/>`;
+  else g=`<polygon points="${pts}" fill="${style.fill}" stroke="${style.stroke}" stroke-width="${n(style.line*scale*0.18)}"/><polygon points="${pts}" fill="${svgFillFor(o.hatchMaterial||o.material)}"/>`;
   return `<g data-element-id="${esc(o.id)}" data-discipline="${esc(o.discipline)}" data-type="${esc(o.type)}">${g}</g>`
  }).join('');
  const dimSVG=annotations.dimensions.map(d=>{
