@@ -52,6 +52,12 @@ export class GPUViewer{
  }
  pick(e){const r=this.canvas.getBoundingClientRect();this.pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hit=this.raycaster.intersectObjects(this.group.children,true)[0];if(hit){let o=hit.object;while(o&&!o.userData.id)o=o.parent;this.onSelect(o?.userData.id||null)}}
  clear(){for(const obj of [...this.group.children]){this.group.remove(obj);obj.traverse(n=>{n.geometry?.dispose();if(n.material)Array.isArray(n.material)?n.material.forEach(m=>m.dispose()):n.material.dispose()})}}
+ addReferenceModel(root,name='Imported model'){
+  if(!this.references){this.references=new THREE.Group();this.scene.add(this.references)}
+  root.name=name;this.references.add(root);this.fit();return root;
+ }
+ clearReferences(){if(!this.references)return;for(const root of [...this.references.children]){this.references.remove(root);root.traverse(o=>{o.geometry?.dispose()})}}
+ exportRoot(includeReferences=true){const group=new THREE.Group();group.name='SUBSTRATE PRO BIM';this.group.children.forEach(o=>group.add(o.clone(true)));if(includeReferences&&this.references)this.references.children.forEach(o=>group.add(o.clone(true)));return group}
  setGrid(visible){this.grid.visible=Boolean(visible)}
  addElement(o,geometry,origin){
   const spec=resolveMaterial(o.material),material=new THREE.MeshStandardMaterial({color:spec.color,roughness:spec.roughness,metalness:spec.metalness,transparent:o.material==='Glass',opacity:spec.opacity??1,side:THREE.DoubleSide});
@@ -121,5 +127,5 @@ export class GPUViewer{
   this.controls.enableRotate=true;this.controls.target.copy(target);this.controls.update();
  }
  resetOrbit(){this.preset(this.activeView)}
- dispose(){this.running=false;this.gizmo?.remove();this.observer.disconnect();this.controls.dispose();this.clear();for(const tex of this.textures.values())tex.dispose();this.ground.geometry.dispose();this.ground.material.dispose();this.renderer.dispose()}
+ dispose(){this.running=false;this.gizmo?.remove();this.clearReferences();this.observer.disconnect();this.controls.dispose();this.clear();for(const tex of this.textures.values())tex.dispose();this.ground.geometry.dispose();this.ground.material.dispose();this.renderer.dispose()}
 }
