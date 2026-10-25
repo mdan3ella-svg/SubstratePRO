@@ -1,3 +1,4 @@
+import {installDetailCamera} from '../detailcore/section-camera/dialog.js';
 import {ensureHierarchy,prepareElement,nearestGridIntersection,makeGridFoundation,makeGridFrame,makeGridSlab,coordinationReport,STAGES,stageForType} from '../detailcore/construction-hierarchy/index.js';
 import {planObjects,shouldStartMove,annotationMetrics} from '../core/geometry/plan-visibility.js';
 import {catalogEntries,findCatalogItem,createCatalogObjects,catalogTableOfContents} from '../detailcore/catalog/index.js';
@@ -261,3 +262,6 @@ if(hierarchyPanel){
  document.getElementById('coordinationAudit').onclick=()=>{const c=coordinationReport(store.doc);report('BUILDING CONSTRUCTION HIERARCHY\n'+c.byStage.map(s=>s.title+' — '+s.count+' elements').join('\n')+'\n\nGRID NODES: '+c.gridNodes+'\nLEVELS: '+c.levels.length+'\n\nCOORDINATION ISSUES\n'+(c.issues.map(i=>i.severity.toUpperCase()+' · '+i.code+' · '+i.message).join('\n')||'No issues found in implemented checks')+'\n\nThis is a model-data audit, not engineering or regulatory certification.');};
  const oldNew=document.getElementById('new');oldNew?.addEventListener('click',()=>queueMicrotask(restore));
 }
+
+// Section detail camera is independent of the main BIM renderer.
+installDetailCamera({canvas,getCamera:()=>camera,toWorld,getDoc:()=>renderDoc(),notice,setView});
