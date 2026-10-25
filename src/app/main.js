@@ -28,7 +28,7 @@ import{quantities}from'../detailcore/assembly-solver/index.js';
 import{sectionAt}from'../detailcore/section-engine/index.js';
 import{removeWithDependents}from'../core/dependencies/index.js';
 import{importJSON,exportJSON,download}from'../interoperability/index.js';
-import{planSVG}from'../plot/index.js';
+import{planSVG,technicalViewSVG}from'../plot/index.js';
 import{tools as architecture}from'../disciplines/architecture/index.js';
 import{tools as structure}from'../disciplines/structure/index.js';
 import{tools as mechanical}from'../disciplines/mechanical/index.js';
@@ -156,7 +156,8 @@ window.addEventListener('substrate-underlay-loaded',()=>{if(view==='plan')draw()
 window.__substrateReferencePlans=referencePlans;
 $('save').onclick=()=>{download('SUBSTRATE_PRO_Project.substratepro',exportJSON(store.doc),'application/json');notice('Native project downloaded')};
 $('open').onclick=()=>$('file').click();$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const doc=importJSON(await f.text());store.replace(doc);selected=null;camera=null;customCamera=false;notice('Project opened · '+doc.objects.length+' elements')}catch(err){report('IMPORT ERROR\n'+err.message);notice('Could not open file')}e.target.value=''};
-$('export').onclick=()=>{download('SUBSTRATE_PRO_Plan.svg',planSVG(renderDoc()),'image/svg+xml');notice('Plan SVG downloaded')};
+$('exportOrthoSVG').onclick=()=>{const scale=Number(document.getElementById('drawingScale')?.value)||100;for(const viewName of ['front','rear','right','left','iso'])download(`SUBSTRATE_PRO_${viewName.toUpperCase()}_1-${scale}.svg`,technicalViewSVG(renderDoc(),viewName,{scale}),'image/svg+xml');notice('Orthographic and isometric vector views exported');};
+$('export').onclick=()=>{download('SUBSTRATE_PRO_Plan.svg',planSVG(renderDoc(),{scale:Number(document.getElementById('drawingScale')?.value)||100}),'image/svg+xml');notice('Plan SVG downloaded')};
 $('generateSheet').onclick=()=>{const html=buildSheetHTML(renderDoc(),{standard:$('sheetStandard').value,number:$('sheetNumber').value,title:$('sheetTitle').value,scale:$('sheetScale').value});const blob=new Blob([html],{type:'text/html'}),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SUBSTRATE_PRO_'+$('sheetNumber').value.replace(/[^A-Za-z0-9-]/g,'_')+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);notice('Construction sheet HTML exported · open and print to PDF')};
 $('review').onclick=()=>{const modal=$('reviewModal');modal.hidden=false;requestAnimationFrame(()=>updateReview(modal,renderDoc()))};$('closeReview').onclick=()=>$('reviewModal').hidden=true;
 $('printReview').onclick=$('plot').onclick=()=>{if($('reviewModal').hidden){$('review').click()}requestAnimationFrame(()=>{updateReview($('reviewModal'),renderDoc());window.print()})};
