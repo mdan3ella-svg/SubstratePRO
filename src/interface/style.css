@@ -24,3 +24,5 @@ button.active{box-shadow:inset 0 0 0 1px #2f8078}button{min-height:37px}
 .precision-controls{padding:12px 0;border-top:1px solid #dce4e8;margin-top:12px}.precision-controls h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.precision-controls p{font-size:11px;line-height:1.5;color:#556b76}.precision-controls .toolgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}.precision-controls button{font-size:11px;white-space:normal;min-height:32px}
 
 .familyProperties{display:grid;gap:7px;margin:12px 0}.familyProperties label{display:block}.familyProperties select{width:100%;min-height:30px}.familyProperties [hidden]{display:none!important}
+
+.catalog-results{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;margin:8px 0}.catalog-results button{text-align:left;white-space:normal;font-size:11px;padding:7px 9px}.catalog-results button.active{outline:2px solid #187a78;background:#e7f4f0}.catalog-results small{display:block;font-size:10px;opacity:.75}
