@@ -21,6 +21,7 @@ import{runAudit}from'../audit/index.js';
 import{codeScreen}from'../audit/code-screen.js';
 import{connectionSchedule}from'../detailcore/connections/index.js';
 import{exportEditableMapping}from'../interoperability/ifc/mapping.js';
+import{load3DFile,export3D,downloadModel,summarizeModel}from'../interoperability/model-formats.js';
 import{quantities}from'../detailcore/assembly-solver/index.js';
 import{sectionAt}from'../detailcore/section-engine/index.js';
 import{removeWithDependents}from'../core/dependencies/index.js';
@@ -133,6 +134,13 @@ $('delete').onclick=()=>{if(!active()){notice('Select an element first');return}
 $('duplicate').onclick=()=>{const o=active();if(!o){notice('Select an element first');return}const clone=element(o.type,{...o,id:undefined,x:o.x+500,x2:o.x2+500,y:o.y+500,y2:o.y2+500,name:o.name+' copy'});store.commit(d=>d.objects.push(clone));selected=clone.id;notice('Element duplicated')};
 $('applyProps').onclick=()=>{if(!active())return;const id=selected,fields={};document.querySelectorAll('[data-prop]:not([disabled])').forEach(el=>fields[el.dataset.prop]=el.type==='number'?Number(el.value):el.value);if(['x','y','x2','y2','z','height','thickness'].some(k=>!Number.isFinite(fields[k]))){notice('Invalid numeric property');return}document.querySelectorAll('[data-family]').forEach(el=>{if(!el.closest('[hidden]'))fields[el.dataset.family]=el.value});store.commit(d=>{Object.assign(d.objects.find(o=>o.id===id),fields);for(const dim of d.objects.filter(x=>x.type==='dimension'&&x.sourceId===id)){dim.x=fields.x;dim.y=fields.y;dim.x2=fields.x2;dim.y2=fields.y2;}});notice('Properties committed')};
 $('new').onclick=()=>{if(store.doc.objects.length&&!confirm('Create a new project and clear the current workspace?'))return;store.replace(blank());selected=null;camera=null;customCamera=false;notice('New project')};
+// 3D mesh interchange: imported meshes are independent scene references (not editable BIM).
+// Meshes persist in the current browser session. Save original interchange files separately.
+$('import3D').onclick=()=>{if(!gpu){notice('Enable WebGL before importing 3D meshes');return;}$('model3DFile').click()};
+$('model3DFile').onchange=async e=>{const files=Array.from(e.target.files||[]);for(const f of files){try{const root=await load3DFile(f);const info=summarizeModel(root);gpu.addReferenceModel(root,f.name);notice(`Imported ${f.name}: ${info.meshes} meshes`);report(`3D REFERENCE IMPORT\n${f.name}\n${info.meshes} meshes · ${info.triangles} triangles\nGeometry is a scene reference and is not editable parametric BIM. Store the original file separately.`)}catch(error){report('3D IMPORT ERROR: '+f.name+'\n'+error.message);notice('Import failed: '+f.name)}}e.target.value=''};
+$('export3D').onclick=()=>{$('modelExportDialog').hidden=false};
+$('close3DExport').onclick=()=>{$('modelExportDialog').hidden=true};
+$('run3DExport').onclick=async()=>{const b=$('run3DExport');b.disabled=true;try{if(!gpu)throw Error('WebGL viewer unavailable');const format=$('modelExportFormat').value;const root=gpu.exportRoot($('include3DReferences').checked);if(!root.children.length)throw Error('Nothing to export');$('modelExportStatus').textContent='Preparing '+format.toUpperCase()+'…';const result=await export3D(root,format);downloadModel('SUBSTRATE_PRO_Model.'+format,result);$('modelExportStatus').textContent='Mesh export created ('+format.toUpperCase()+')';notice('3D mesh exported')}catch(error){$('modelExportStatus').textContent='Export failed: '+error.message;report('3D EXPORT ERROR\n'+error.stack)}finally{b.disabled=false}};
 $('save').onclick=()=>{download('SUBSTRATE_PRO_Project.substratepro',exportJSON(store.doc),'application/json');notice('Native project downloaded')};
 $('open').onclick=()=>$('file').click();$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const doc=importJSON(await f.text());store.replace(doc);selected=null;camera=null;customCamera=false;notice('Project opened · '+doc.objects.length+' elements')}catch(err){report('IMPORT ERROR\n'+err.message);notice('Could not open file')}e.target.value=''};
 $('export').onclick=()=>{download('SUBSTRATE_PRO_Plan.svg',planSVG(renderDoc()),'image/svg+xml');notice('Plan SVG downloaded')};

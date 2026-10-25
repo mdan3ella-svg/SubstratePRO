@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const root=new URL('../',import.meta.url),main=readFileSync(new URL('../src/app/main.js',import.meta.url),'utf8');
+const formats=readFileSync(new URL('../src/interoperability/model-formats.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const viewer=readFileSync(new URL('../src/render-3d/webgl.js',import.meta.url),'utf8');
+test('3D interchange UI has visible import export actions and file picker',()=>{for(const id of ['import3D','export3D','model3DFile','modelExportFormat','run3DExport'])assert.match(html,new RegExp('id="'+id+'"'))});
+test('interchange uses official Three.js loader/exporter modules',()=>{for(const name of ['GLTFLoader','OBJLoader','STLLoader','FBXLoader','GLTFExporter','OBJExporter','STLExporter'])assert.match(formats,new RegExp(name))});
+test('glTF JSON exports serialized JSON, not object coercion',()=>assert.match(formats,/JSON\.stringify\(data,null,2\)/));
+test('reference meshes are kept separate from parametric BIM group',()=>{assert.match(viewer,/this\.references=new THREE\.Group\(\)/);assert.match(viewer,/exportRoot\(includeReferences=true\)/);assert.match(main,/mesh/)});
