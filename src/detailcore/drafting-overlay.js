@@ -7,6 +7,7 @@ const SYMBOL_TYPES=new Set(['door','window','fixture','equipment','furniture']);
 export function draftingOverlay(ctx,objects,view,map,settings=defaultDrafting,opts={}){
  if(view!=='plan'&&view!=='top')return;
  const detail=settings.lod==='detail', schematic=settings.lod==='schematic', coordination=settings.lod==='coordination';
+ const textPx=settings.metrics?.textPx||11, dimOffset=settings.metrics?.dimOffsetPx||23;
  ctx.save();ctx.lineJoin='miter';ctx.lineCap='square';
  for(const o of objects){
   const style=drawingStyle(o);
@@ -34,9 +35,9 @@ export function draftingOverlay(ctx,objects,view,map,settings=defaultDrafting,op
    label(ctx,tagFor(o),mid.x,mid.y-6,style.stroke,true);
    if((detail||coordination)&&distance>90)label(ctx,`${o.material} · ${Math.round(o.thickness||0)} mm`,mid.x,mid.y+11,style.stroke,false);
   }
-  if(settings.autoDimensions&&detail&&['wall','beam','duct','pipe','road','conduit'].includes(o.type)&&distance>38){drawDimension(ctx,p1,p2,`${Math.round(length(o)).toLocaleString('en-US')} mm`,style.stroke,23);}
+  if(settings.autoDimensions&&detail&&['wall','beam','duct','pipe','road','conduit'].includes(o.type)&&distance>38){drawDimension(ctx,p1,p2,`${Math.round(length(o)).toLocaleString('en-US')} mm`,style.stroke,dimOffset);}
  }
  ctx.restore();
 }
-function label(ctx,value,x,y,color,strong){ctx.font=`${strong?'600':'400'} ${strong?11:10}px Arial, sans-serif`;const width=ctx.measureText(value).width;ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(x-width/2-3,y-10,width+6,13);ctx.fillStyle=color;ctx.textAlign='center';ctx.fillText(value,x,y);ctx.textAlign='start'}
+function label(ctx,value,x,y,color,strong){ctx.font=`${strong?'600':'400'} ${strong?12:11}px Arial, sans-serif`;const width=ctx.measureText(value).width;ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(x-width/2-3,y-10,width+6,13);ctx.fillStyle=color;ctx.textAlign='center';ctx.fillText(value,x,y);ctx.textAlign='start'}
 export function drawDimension(ctx,a,b,value,color='#374151',offset=22){const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy);if(L<16)return;const nx=-dy/L,ny=dx/L,ex=nx*offset,ey=ny*offset;ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(a.x+nx*7,a.y+ny*7);ctx.lineTo(a.x+ex+nx*7,a.y+ey+ny*7);ctx.moveTo(b.x+nx*7,b.y+ny*7);ctx.lineTo(b.x+ex+nx*7,b.y+ey+ny*7);ctx.moveTo(a.x+ex,a.y+ey);ctx.lineTo(b.x+ex,b.y+ey);for(const p of [a,b]){const x=p.x+ex,y=p.y+ey;ctx.moveTo(x-3*nx-3*dx/L,y-3*ny-3*dy/L);ctx.lineTo(x+3*nx+3*dx/L,y+3*ny+3*dy/L)}ctx.stroke();label(ctx,value,(a.x+b.x)/2+ex,(a.y+b.y)/2+ey-4,color,false);ctx.restore()}
