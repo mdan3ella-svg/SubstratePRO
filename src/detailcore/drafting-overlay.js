@@ -8,7 +8,7 @@ const SYMBOL_TYPES=new Set(['door','window','fixture','equipment','furniture']);
 export function draftingOverlay(ctx,objects,view,map,settings=defaultDrafting,opts={}){
  if(view!=='plan'&&view!=='top')return;
  const detail=settings.lod==='detail',schematic=settings.lod==='schematic';
- const textPx=settings.metrics?.textPx||11;
+ const textPx=settings.metrics?.textPx||12;
  ctx.save();ctx.lineJoin='miter';ctx.lineCap='square';
  for(const o of objects){
   const style=drawingStyle(o);
@@ -18,7 +18,7 @@ export function draftingOverlay(ctx,objects,view,map,settings=defaultDrafting,op
   ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=style.fill;ctx.fill();ctx.strokeStyle=o.id===opts.selected?'#e17d25':style.stroke;ctx.lineWidth=schematic?1:style.line;ctx.stroke();
   if(detail&&settings.materialHatches)drawHatchPattern(ctx,pts,hatchFor(o.material),map(pWorld[0]));
  }
- const laid=layoutAnnotations(objects,map,{...settings,textPx});
+ const laid=layoutAnnotations(objects,map,{...settings,textPx,dimOffsetPx:settings.metrics?.dimOffsetPx||34,clearancePx:settings.metrics?.clearancePx||12});
  for(const d of laid.dimensions){const style=drawingStyle(d.object);drawDimension(ctx,d.a,d.b,d.text,style.stroke,d.offset,d.label,textPx);}
  for(const t of laid.tags){const style=drawingStyle(t.object),h=t.lines.length*(textPx+4)+7;
    ctx.save();ctx.strokeStyle=style.stroke;ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(t.anchor.x,t.anchor.y);const bend={x:(t.anchor.x+t.x)/2,y:t.y};ctx.lineTo(bend.x,bend.y);ctx.lineTo(t.x,t.y);ctx.stroke();
