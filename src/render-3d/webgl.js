@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {viewDefinition,framingDimensions} from './camera-views.js';
 import {footprint} from '../core/geometry/index.js';
 import {wallSections} from '../core/geometry/openings.js';
 import {MATERIALS,VIEW_STYLES,resolveMaterial,makeHatchCanvas} from './material-styles.js';
@@ -11,7 +12,7 @@ export class GPUViewer{
   this.renderer=new THREE.WebGLRenderer({canvas,antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.1;
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0xf9fbfc);
-  this.camera=new THREE.PerspectiveCamera(45,1,.005,100000);this.camera.up.set(0,0,1);this.camera.position.set(8,-10,8);
+  this.perspectiveCamera=new THREE.PerspectiveCamera(45,1,.005,100000);this.orthoCamera=new THREE.OrthographicCamera(-8,8,8,-8,.005,100000);this.camera=this.perspectiveCamera;for(const c of [this.perspectiveCamera,this.orthoCamera])c.up.set(0,0,1);this.camera.position.set(8,-10,8);this.activeView='perspective';this.modelSpan=15;
   this.controls=new OrbitControls(this.camera,canvas);this.controls.enableDamping=true;this.controls.dampingFactor=.1;
   this.controls.screenSpacePanning=true;this.controls.target.set(0,0,0);
   this.scene.add(new THREE.HemisphereLight(0xffffff,0x8196a3,2.3));
@@ -26,7 +27,20 @@ export class GPUViewer{
   this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas.parentElement);
   this.running=true;const tick=()=>{if(!this.running)return;this.resize();this.controls.update();this.renderer.render(this.scene,this.camera);requestAnimationFrame(tick)};requestAnimationFrame(tick);
  }
- resize(){const w=this.canvas.clientWidth,h=this.canvas.clientHeight;if(w<2||h<2)return;if(this.renderer.domElement.width!==Math.floor(w*this.renderer.getPixelRatio())||this.renderer.domElement.height!==Math.floor(h*this.renderer.getPixelRatio()))this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix()}
+ resize(){const w=this.canvas.clientWidth,h=this.canvas.clientHeight;if(w<2||h<2)return;if(this.renderer.domElement.width!==Math.floor(w*this.renderer.getPixelRatio())||this.renderer.domElement.height!==Math.floor(h*this.renderer.getPixelRatio()))this.renderer.setSize(w,h,false);this.perspectiveCamera.aspect=w/h;this.perspectiveCamera.updateProjectionMatrix();this.updateOrthoFrustum(w/h)}
+ updateOrthoFrustum(aspect){
+  const a=Math.max(0.1,aspect||1);const half=Math.max(.01,this.modelSpan/2);const cam=this.orthoCamera;
+  cam.left=-half*a;cam.right=half*a;cam.top=half;cam.bottom=-half;cam.updateProjectionMatrix();
+ }
+ switchCamera(projection){
+  const next=projection==='perspective'?this.perspectiveCamera:this.orthoCamera;if(next===this.camera)return;
+  const old=this.camera,target=this.controls.target.clone(),distance=Math.max(1,old.position.distanceTo(target));
+  const dir=old.position.clone().sub(target).normalize();next.position.copy(target).addScaledVector(dir,distance);
+  this.controls.dispose();this.camera=next;this.controls=new OrbitControls(this.camera,this.canvas);
+  this.controls.enableDamping=true;this.controls.dampingFactor=.1;this.controls.screenSpacePanning=true;this.controls.target.copy(target);
+  this.controls.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.PAN};
+  this.resize();
+ }
  pick(e){const r=this.canvas.getBoundingClientRect();this.pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);const hit=this.raycaster.intersectObjects(this.group.children,true)[0];if(hit){let o=hit.object;while(o&&!o.userData.id)o=o.parent;this.onSelect(o?.userData.id||null)}}
  clear(){for(const obj of [...this.group.children]){this.group.remove(obj);obj.traverse(n=>{n.geometry?.dispose();if(n.material)Array.isArray(n.material)?n.material.forEach(m=>m.dispose()):n.material.dispose()})}}
  setGrid(visible){this.grid.visible=Boolean(visible)}
@@ -71,7 +85,32 @@ export class GPUViewer{
   }
   this.updateAO();return errors;
  }
- fit(){if(!this.group.children.length){this.controls.target.set(0,0,0);this.camera.position.set(8,-10,8);return}const box=new THREE.Box3().setFromObject(this.group),center=box.getCenter(new THREE.Vector3()),ext=Math.max(box.getSize(new THREE.Vector3()).length(),2);this.controls.target.copy(center);this.camera.position.copy(center).add(new THREE.Vector3(ext,-ext,ext));this.camera.near=Math.max(.001,ext/10000);this.camera.far=Math.max(500,ext*100);this.camera.updateProjectionMatrix();this.controls.update()}
- preset(which){const target=this.controls.target.clone(),dist=Math.max(3,this.camera.position.distanceTo(target));const dir={iso:[1,-1,1],plan:[0,0,1],front:[0,-1,0],rear:[0,1,0],right:[1,0,0],left:[-1,0,0]}[which]||[1,-1,1];this.camera.position.copy(target.add(new THREE.Vector3(...dir).normalize().multiplyScalar(dist)));this.controls.update()}
+ fit(){
+  const box=this.group.children.length?new THREE.Box3().setFromObject(this.group):null;
+  const center=box?box.getCenter(new THREE.Vector3()):new THREE.Vector3();
+  const size=box?box.getSize(new THREE.Vector3()):new THREE.Vector3(7,7,4);
+  const aspect=Math.max(.1,this.canvas.clientWidth/Math.max(1,this.canvas.clientHeight));
+  this.modelSpan=framingDimensions(size,aspect).span;
+  this.orthoCamera.zoom=1;this.perspectiveCamera.zoom=1;
+  const distance=Math.max(5,this.modelSpan*1.5);
+  this.controls.target.copy(center);
+  const def=viewDefinition(this.activeView);
+  const dir=new THREE.Vector3(...def.direction).normalize();this.camera.position.copy(center).addScaledVector(dir,distance);
+  for(const c of [this.perspectiveCamera,this.orthoCamera]){c.near=.005;c.far=Math.max(1000,distance*100);c.updateProjectionMatrix()}
+  this.updateOrthoFrustum(aspect);this.controls.update();
+ }
+ preset(which){
+  const def=viewDefinition(which);this.activeView=which;
+  const target=this.controls.target.clone();
+  this.switchCamera(def.projection);
+  const dist=Math.max(5,this.camera.position.distanceTo(target));
+  const dir=new THREE.Vector3(...def.direction).normalize();
+  this.camera.position.copy(target).addScaledVector(dir,dist);
+  this.camera.up.set(...def.up);
+  this.camera.lookAt(target);
+  // Elevations remain orthographic but can be freely navigated with OrbitControls.
+  this.controls.enableRotate=true;this.controls.target.copy(target);this.controls.update();
+ }
+ resetOrbit(){this.preset(this.activeView)}
  dispose(){this.running=false;this.observer.disconnect();this.controls.dispose();this.clear();for(const tex of this.textures.values())tex.dispose();this.ground.geometry.dispose();this.ground.material.dispose();this.renderer.dispose()}
 }
