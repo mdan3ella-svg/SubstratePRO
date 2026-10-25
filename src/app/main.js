@@ -31,6 +31,9 @@ const $=id=>document.getElementById(id),store=new Store(),canvas=$('stage'),name
 const disciplines={architecture,structure,mechanical,plumbing,electrical,civil};let discipline='architecture',tool='select',view='plan',selected=null,gesture=null,preview=null,camera=null,customCamera=false;
 let gpu=null,exactReady=false,latestErrors=[],pendingStart=null,wallChain=false,chainGroup=null;
 const draftingSettings={lod:'detail',autoDimensions:true,autoTags:true,materialHatches:true};
+const visualization={style:'shaded',ao:.55};
+$('visualStyle')?.addEventListener('change',e=>{visualization.style=e.target.value;if(gpu)gpu.setVisualStyle(visualization.style)});
+$('aoStrength')?.addEventListener('input',e=>{visualization.ao=Number(e.target.value)/100;$('aoValue').textContent=e.target.value+'%';if(gpu)gpu.setAO(visualization.ao)});
 const diagnostic=msg=>{console.error('[SUBSTRATE]',msg);report(String(msg));};
 const setEngineStatus=msg=>{const el=$("engineStatus");if(el)el.textContent=msg;};
 const visible=()=>store.doc.objects.filter(o=>layerVisible(store.doc,o));
@@ -140,7 +143,7 @@ new ResizeObserver(()=>draw()).observe(canvas);
 async function enableWebGL(){
  if(gpu)return true;
  try{notice('Starting GPU viewport…');const {GPUViewer}=await import('../render-3d/webgl.js');
-  gpu=new GPUViewer($('gpuStage'),{onSelect:id=>{selected=id;sync()}});
+  gpu=new GPUViewer($('gpuStage'),{onSelect:id=>{selected=id;sync()}});gpu.setVisualStyle(visualization.style);gpu.setAO(visualization.ao);
   const errors=gpu.setModel(store.doc);gpu.fit();setView(view);setEngineStatus('WebGL ACTIVE · Parametric mesh preview · Exact B-rep OFF');
   if(errors.length)report('WEBGL WARNINGS\n'+errors.map(e=>e.error).join('\n'));
   notice('WebGL orbit / pan / zoom active');return true;
