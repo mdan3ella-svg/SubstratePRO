@@ -13,16 +13,13 @@ export function drawUnderlays(ctx,underlays,map){
  for(const o of underlays||[]){if(!o.visible||!o.src)continue;
   let img=cache.get(o.src);if(!img){img=new Image();img.onload=()=>window.dispatchEvent(new Event('substrate-underlay-loaded'));img.src=o.src;cache.set(o.src,img)}
   if(!img.complete||!img.naturalWidth)continue;
-  const a=map({x:o.x,y:o.y}),b=map({x:o.x+o.widthMM,y:o.y}),d=map({x:o.x,y:o.y+o.heightMM});
-  ctx.save();ctx.globalAlpha=o.opacity;ctx.setTransform(ctx.getTransform());
-  // Canvas image basis correctly follows Plan's inverted Y direction.
+  const a=map({x:o.x,y:o.y});
+  const th=(Number(o.rotation)||0)*Math.PI/180,c=Math.cos(th),s=Math.sin(th);
+  const b=map({x:o.x+o.widthMM*c,y:o.y+o.widthMM*s});
+  const d=map({x:o.x-o.heightMM*s,y:o.y+o.heightMM*c});
+  ctx.save();ctx.globalAlpha=o.opacity;
   const ex=(b.x-a.x)/img.naturalWidth,ey=(b.y-a.y)/img.naturalWidth;
   const fx=(d.x-a.x)/img.naturalHeight,fy=(d.y-a.y)/img.naturalHeight;
-  const theta=(Number(o.rotation)||0)*Math.PI/180;
-  const cos=Math.cos(theta),sin=Math.sin(theta);
-  // rotate local drawing vectors about the underlay's anchored origin.
-  const rx=ex*cos+fx*sin, ry=ey*cos+fy*sin;
-  const sx=-ex*sin+fx*cos, sy=-ey*sin+fy*cos;
-  ctx.transform(rx,ry,sx,sy,a.x,a.y);ctx.drawImage(img,0,0);ctx.restore();
+  ctx.transform(ex,ey,fx,fy,a.x,a.y);ctx.drawImage(img,0,0);ctx.restore();
  }
 }
